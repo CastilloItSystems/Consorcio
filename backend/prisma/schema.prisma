@@ -1,0 +1,119 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  firstName String   @map("first_name")
+  lastName  String   @map("last_name")
+  password  String
+  // role is now modeled via Memberships and Roles per tenant
+  // role      String   @default("user")
+  isActive  Boolean  @default(true) @map("is_active")
+  lastLogin DateTime? @map("last_login")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  memberships Membership[]
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+  @@index([email])
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  stock       Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Tenant isolation: optional relation to Company for tenant-scoped products
+  company   Company? @relation(fields: [companyId], references: [id])
+  companyId String?
+
+  @@map("products")
+}
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  memberships Membership[]
+  products    Product[]
+
+  @@map("companies")
+}
+
+model Membership {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  company   Company  @relation(fields: [companyId], references: [id])
+  companyId String
+  role      Role     @relation(fields: [roleId], references: [id])
+  roleId    String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, companyId])
+  @@map("memberships")
+}
+
+model Role {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  rolePermissions RolePermission[]
+  memberships Membership[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id   String @id @default(cuid())
+  key  String @unique
+  name String
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  role         Role       @relation(fields: [roleId], references: [id])
+  roleId       String
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  permissionId String
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  tokenHash String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+
+  @@map("refresh_tokens")
+}
