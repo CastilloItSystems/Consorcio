@@ -15,7 +15,13 @@ async function main() {
   });
   if (!companyA) {
     companyA = await prismaAny.company.create({
-      data: { name: 'Empresa A', slug: 'empresa-a' },
+      data: {
+        name: 'Empresa A',
+        slug: 'empresa-a',
+        themeColor: 'blue',
+        themeName: 'Tech',
+        darkModeDefault: false,
+      },
     });
   }
 
@@ -24,7 +30,13 @@ async function main() {
   });
   if (!companyB) {
     companyB = await prismaAny.company.create({
-      data: { name: 'Empresa B', slug: 'empresa-b' },
+      data: {
+        name: 'Empresa B',
+        slug: 'empresa-b',
+        themeColor: 'pink',
+        themeName: 'Creative',
+        darkModeDefault: false,
+      },
     });
   }
 
@@ -125,28 +137,37 @@ async function main() {
     );
   }
 
-  // Create a sample product for companyB to show tenant-scoped data
-  await prismaAny.product.create({
-    data: {
-      name: 'Sample Product',
-      description: 'Producto de ejemplo para company B',
-      // Use string for decimal to avoid runtime Decimal import issues in the seed script
-      price: '9.99',
-      stock: 100,
-      companyId: companyB.id,
-    },
+  // Create a sample product for companyB to show tenant-scoped data (idempotent)
+  const existingProduct = await prismaAny.product.findFirst({
+    where: { name: 'Sample Product', companyId: companyB.id },
   });
+  if (!existingProduct) {
+    await prismaAny.product.create({
+      data: {
+        name: 'Sample Product',
+        description: 'Producto de ejemplo para company B',
+        // Use string for decimal to avoid runtime Decimal import issues in the seed script
+        price: '9.99',
+        stock: 100,
+        companyId: companyB.id,
+      },
+    });
+  }
 
   console.log('Seed: usuario creado:', user.email, 'company:', companyA.slug);
+
+  console.log('Seed: Iniciando creación de superadmin...');
 
   // --- Superadmin: usuario con acceso a todo (idempotente) ---
   const superEmail = 'superadmin@consorcio.com';
   const superPlain = 'superadmin';
 
   // create or get super role
+  console.log('Seed: Buscando role superadmin...');
   let superRole = await prismaAny.role.findFirst({
     where: { name: 'superadmin' },
   });
+  console.log('Seed: Role superadmin encontrado:', superRole ? 'SI' : 'NO');
   if (!superRole) {
     superRole = await prismaAny.role.create({
       data: {
@@ -158,9 +179,11 @@ async function main() {
   }
 
   // create super user if not exists
+  console.log('Seed: Buscando super user...');
   let superUser = await prisma.user.findUnique({
     where: { email: superEmail },
   });
+  console.log('Seed: Super user encontrado:', superUser ? 'SI' : 'NO');
   if (!superUser) {
     const hashedSuper = await bcrypt.hash(superPlain, 10);
     superUser = await prisma.user.create({
@@ -194,7 +217,13 @@ async function main() {
   const companies = await prismaAny.company.findMany();
   if (companies.length === 0) {
     const c = await prismaAny.company.create({
-      data: { name: 'Consorcio', slug: 'consorcio' },
+      data: {
+        name: 'Consorcio',
+        slug: 'consorcio',
+        themeColor: 'purple',
+        themeName: 'Aurora',
+        darkModeDefault: false,
+      },
     });
     companies.push(c);
   }

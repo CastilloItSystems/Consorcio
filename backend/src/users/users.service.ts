@@ -56,4 +56,36 @@ export class UsersService {
       where: { id },
     });
   }
+
+  async getUserCompanies(userId: string) {
+    const memberships = await this.prisma.membership.findMany({
+      where: {
+        userId,
+      },
+      include: {
+        company: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            themeColor: true,
+            themeName: true,
+            darkModeDefault: true,
+          },
+        },
+        role: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return memberships.map((m) => ({
+      ...m.company,
+      role: m.role.name,
+      membershipId: m.id,
+    }));
+  }
 }

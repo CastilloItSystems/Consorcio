@@ -8,6 +8,7 @@ import {
   Delete,
   HttpStatus,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -74,6 +75,24 @@ export class UsersController {
   })
   findAll() {
     return this.usersService.findAll();
+  }
+
+  @Get('me/companies')
+  @ApiOperation({
+    summary: 'Obtener companies del usuario autenticado',
+    description:
+      'Retorna todas las companies a las que el usuario tiene acceso',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Lista de companies obtenida exitosamente',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'No autorizado - Token JWT requerido',
+  })
+  getUserCompanies(@Req() req: any) {
+    return this.usersService.getUserCompanies(req.user.id);
   }
 
   @Get(':id')

@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Res,
   Req,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
@@ -86,11 +87,14 @@ export class AuthController {
   ): Promise<AuthResponseDto> {
     const result = await this.authService.login(loginDto);
 
-    // Set refresh token in httpOnly cookie (production: secure)
+    // Set refresh token in httpOnly cookie
+    const sameSiteValue =
+      process.env.NODE_ENV === 'production' ? 'none' : 'lax';
+
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax' as const,
+      sameSite: sameSiteValue as 'lax' | 'none' | 'strict',
       path: '/',
       maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
     };
@@ -118,16 +122,26 @@ export class AuthController {
     const cookieToken = req?.cookies?.refresh_token as string | undefined;
     const token = cookieToken || body.refresh_token;
 
+    if (!token) {
+      throw new BadRequestException(
+        'Refresh token is required (either in cookie or body)',
+      );
+    }
+
     const result = await this.authService.refresh(token);
+
+    const sameSiteValue =
+      process.env.NODE_ENV === 'production' ? 'none' : 'lax';
 
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax' as const,
+      sameSite: sameSiteValue as 'lax' | 'none' | 'strict',
       path: '/',
       maxAge: 1000 * 60 * 60 * 24 * 30,
     };
 
+    // Actualizar cookie con el nuevo refresh_token rotado
     if ((result as any).refresh_token) {
       res.cookie('refresh_token', (result as any).refresh_token, cookieOptions);
       const { refresh_token, ...safe } = result as any;

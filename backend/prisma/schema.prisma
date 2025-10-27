@@ -55,6 +55,11 @@ model Company {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Theme configuration
+  themeColor      String  @default("purple") @map("theme_color") // purple|blue|pink|emerald
+  themeName       String  @default("Aurora") @map("theme_name")
+  darkModeDefault Boolean @default(false) @map("dark_mode_default")
+
   // Relations
   memberships Membership[]
   products    Product[]
