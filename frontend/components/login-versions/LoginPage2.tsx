@@ -12,7 +12,6 @@ import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
 import handleError from "@/lib/errorHandler";
 import { motion } from "framer-motion";
-
 // Componente de fondo animado (Aurora)
 function AuroraBackground() {
   return (
@@ -33,7 +32,10 @@ const LoginPage2 = () => {
     control,
     handleSubmit: rhfHandleSubmit,
     formState: { errors },
-  } = useForm<LoginForm>({ resolver: zodResolver(loginSchema) });
+  } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "", tenantId: "" },
+  });
 
   const onSubmit = async (data: LoginForm) => {
     setLoading(true);
@@ -70,7 +72,7 @@ const LoginPage2 = () => {
       });
     }
   };
-
+  // 2. Observamos el valor del campo 'email'. Esta variable se actualizará en cada tecleo.
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gray-900 text-white">
       {/* Fondo de Aurora */}
@@ -89,41 +91,46 @@ const LoginPage2 = () => {
         <form onSubmit={rhfHandleSubmit(onSubmit)} className="space-y-6">
           {/* Campo de Email */}
           <div className="relative">
-            <i
-              className="pi pi-envelope absolute top-1/2 left-3 -translate-y-1/2 text-white/40"
-              aria-hidden
-            />
-            {/* <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={20} /> */}
-            {/* <InputText
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="correo@ejemplo.com"
-              aria-label="Correo Electrónico"
-              required
-              // className="w-full rounded-lg border border-transparent bg-white/5 py-3 pr-4 pl-11 transition-all outline-none placeholder:text-white/40 focus:border-white/50 focus:bg-white/10 focus:ring-0"
-            /> */}
-            <Controller
-              control={control}
-              name="email"
-              render={({ field }) => (
-                <Label.Float>
-                  <InputText
-                    id="email"
-                    type="email"
-                    value={field.value}
-                    onInput={(e: React.FormEvent<HTMLInputElement>) =>
-                      field.onChange(e.currentTarget.value)
-                    }
-                    className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 shadow-sm focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 focus:outline-none"
-                  />
-                  <Label className="pl-11" htmlFor="username">
-                    Correo electrónico
-                  </Label>
-                </Label.Float>
-              )}
-            />
+            <Label.Float className="group">
+              {/* 2. Usamos IconField para agrupar el icono y el input. */}
+
+              <i
+                className="pi pi-envelope absolute top-1/2 left-3 -translate-y-1/2 text-white/40"
+                aria-hidden
+              />
+              {/* 3. Controller envuelve solo el InputText. */}
+              <Controller
+                control={control}
+                name="email"
+                render={({ field }) => (
+                  <>
+                    <InputText
+                      id="email"
+                      type="email"
+                      {...field}
+                      className="peer w-full"
+                      invalid={!!errors.email}
+                      // placeholder=" "
+                    />
+                    <Label
+                      htmlFor="email"
+                      className={`transition-all duration-200 ${field.value ? "left-0" : "left-10"} peer-focus:left-0`}
+                    >
+                      Correo electrónico
+                    </Label>
+                  </>
+                )}
+              />
+
+              {/* 4. La Label usa 'group-data' para aplicar estilos condicionales.
+              <Label
+                htmlFor="email"
+                className={`transition-all duration-200 ${emailValue ? "left-0" : "left-10"} peer-focus:left-0`}
+              >
+                Correo electrónico
+              </Label> */}
+            </Label.Float>
+            {/* 5. El mensaje de error se muestra fuera del Label.Float */}
             {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
           </div>
 
@@ -153,14 +160,15 @@ const LoginPage2 = () => {
                     id="password"
                     type="password"
                     // placeholder="••••••••"
-                    className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 shadow-sm focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 focus:outline-none"
-                    value={field.value ?? ""}
-                    onInput={(e: React.FormEvent<HTMLInputElement>) =>
-                      field.onChange(e.currentTarget.value)
-                    }
-                    onBlur={field.onBlur}
+                    className="peer w-full"
+                    // className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 shadow-sm focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 focus:outline-none"
+                    {...field}
+                    invalid={!!errors.password}
                   />
-                  <Label className="pl-11" htmlFor="password">
+                  <Label
+                    className={`transition-all duration-200 ${field.value ? "left-0" : "left-10"} peer-focus:left-0`}
+                    htmlFor="password"
+                  >
                     Contraseña
                   </Label>
                 </Label.Float>
@@ -183,14 +191,14 @@ const LoginPage2 = () => {
                   <InputText
                     id="tenantId"
                     type="text"
-                    className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 shadow-sm focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 focus:outline-none"
-                    value={field.value ?? ""}
-                    onInput={(e: React.FormEvent<HTMLInputElement>) =>
-                      field.onChange(e.currentTarget.value)
-                    }
-                    onBlur={field.onBlur}
+                    {...field}
+                    className="peer w-full"
+                    invalid={!!errors.tenantId}
                   />
-                  <Label className="pl-11" htmlFor="tenantId">
+                  <Label
+                    htmlFor="tenantId"
+                    className={`transition-all duration-200 ${field.value ? "left-0" : "left-20"} peer-focus:left-0`}
+                  >
                     Tenant ID (optional)
                   </Label>
                 </Label.Float>

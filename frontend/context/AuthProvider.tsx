@@ -19,47 +19,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     async function bootstrap() {
       const token = getAccessToken();
+      console.log("token", token);
+
+      // Si hay token, intentar obtener el usuario
       if (token) {
         const res = await apiFetch("/auth/me");
         if (res.ok) {
           const d = await res.json();
           if (mounted) setUser(d);
-        } else {
-          // use apiFetch so base URL and headers are correct
-          const refreshed = await apiFetch("/auth/refresh", {
-            method: "POST",
-            credentials: "include",
-          });
-          if (refreshed.ok) {
-            const data = await refreshed.json();
-            if (data.access_token) {
-              setTokenState(data.access_token);
-              setAccessToken(data.access_token);
-              const r2 = await apiFetch("/auth/me");
-              if (r2.ok) {
-                const d2 = await r2.json();
-                if (mounted) setUser(d2);
-              }
-            }
-          }
+          return; // Usuario obtenido exitosamente
+        }
+        // Si falla, apiFetch ya intentó refresh automáticamente
+        // Si el refresh funcionó, intentar de nuevo
+        const res2 = await apiFetch("/auth/me");
+        if (res2.ok) {
+          const d2 = await res2.json();
+          if (mounted) setUser(d2);
         }
       } else {
-        // try refresh via apiFetch (uses NEXT_PUBLIC_API_URL)
-        const refreshed = await apiFetch("/auth/refresh", {
-          method: "POST",
-          credentials: "include",
-        });
-        if (refreshed.ok) {
-          const data = await refreshed.json();
-          if (data.access_token) {
-            setTokenState(data.access_token);
-            setAccessToken(data.access_token);
-            const r2 = await apiFetch("/auth/me");
-            if (r2.ok) {
-              const d2 = await r2.json();
-              if (mounted) setUser(d2);
-            }
-          }
+        // No hay token en memoria, intentar refresh para restaurar sesión
+        // apiFetch manejará el refresh automáticamente si hay cookie
+        const res = await apiFetch("/auth/me");
+        if (res.ok) {
+          const d = await res.json();
+          if (mounted) setUser(d);
         }
       }
     }

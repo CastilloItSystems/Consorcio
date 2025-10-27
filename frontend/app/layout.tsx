@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "../context/AuthProvider";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+import { ThemeProvider } from "../context/ThemeProvider";
 import PrimeSSRProvider from "./prime-ssr-provider";
 
 export const metadata: Metadata = {
@@ -18,15 +17,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <PrimeSSRProvider>
-          <AuthProvider>
-            <div className="flex min-h-screen flex-col">
-              <Navbar />
-              <main className="flex-1">{children}</main>
-              <Footer />
-            </div>
-          </AuthProvider>
-        </PrimeSSRProvider>
+        <ThemeProvider>
+          <PrimeSSRProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </PrimeSSRProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
